@@ -1,0 +1,198 @@
+----------------ORACLE-----------------------------
+-----CREATE TABLES----------
+ CREATE TABLE  customers
+( customer_id NUMBER(10,0) CONSTRAINT customer_id_pk PRIMARY KEY ,
+    last_name VARCHAR2(25) NOT NULL ,
+    first_name VARCHAR2(25)  NOT NULL ,
+    home_phone VARCHAR2(12)  NOT NULL ,
+    address VARCHAR2(100)  NOT NULL ,
+    city VARCHAR2(30) NOT NULL ,
+    state VARCHAR2(2)  NOT NULL ,
+    email VARCHAR2(25),
+    cell_phone VARCHAR2(12)
+   );
+
+CREATE table movies
+( title_id NUMBER(10,0) CONSTRAINT title_id_pk PRIMARY KEY ,
+    title VARCHAR2(60)  NOT NULL ,
+    description VARCHAR2(400)  NOT NULL ,
+    rating VARCHAR2(4) CONSTRAINT movies_rating CHECK ( rating  IN ('G', 'PG', 'R', 'PG13')),
+    category VARCHAR2(20) CHECK ( category  IN ('DRAMA', 'COMEDY', 'ACTION', 'CHILD', 'SCIFI', 'DOCUMENTARY')),               
+    release_date DATE  NOT NULL
+   ); 
+
+CREATE TABLE  media
+( media_id NUMBER(10,0) CONSTRAINT media_id_pk PRIMARY KEY ,
+    format VARCHAR2(3)  NOT NULL ,
+    title_id NUMBER(10,0)  NOT NULL  ,
+    CONSTRAINT media_titleid_fk FOREIGN KEY(title_id)  REFERENCES movies(title_id)
+   );
+
+   
+
+ CREATE TABLE  rental_history
+( media_id NUMBER(10,0) CONSTRAINT media_id_fk REFERENCES media(media_id) ,
+    rental_date DATE DEFAULT SYSDATE ,
+    customer_id NUMBER(10,0)   NOT NULL ,
+    return_date DATE ,
+    CONSTRAINT customer_id_fk FOREIGN KEY(customer_id)  REFERENCES customers(customer_id),
+    CONSTRAINT rental_history_pk PRIMARY KEY (media_id, rental_date)
+   ); 
+
+CREATE TABLE  actors
+   ( actor_id NUMBER(10,0) CONSTRAINT actor_id_pk PRIMARY KEY ,
+    stage_name VARCHAR2(40) NOT NULL ,
+    first_name VARCHAR2(25) NOT NULL ,
+    last_name VARCHAR2(25) NOT NULL ,
+    birth_date DATE NOT NULL
+   );
+   
+CREATE TABLE  star_billings
+( actor_id NUMBER(10,0) CONSTRAINT actor_id_fk REFERENCES actors(actor_id) ,
+    title_id NUMBER(10,0) CONSTRAINT title_id_fk REFERENCES movies(title_id) ,
+    comments VARCHAR2(40),
+    CONSTRAINT star_billings_pk PRIMARY KEY (actor_id, title_id)
+   );
+ 
+   
+
+------SEQUENCES-----------
+CREATE SEQUENCE customer_id_seq
+START WITH 101
+MAXVALUE 1000000;
+
+CREATE SEQUENCE title_id_seq
+START WITH 1
+MAXVALUE 1000000;
+
+CREATE SEQUENCE media_id_seq
+START WITH 92
+MAXVALUE 1000000;
+
+CREATE SEQUENCE actor_id_seq
+START WITH 1001
+MAXVALUE 100000;
+
+select customer_id_seq.nextval from dual; 
+select title_id_seq.nextval from dual; 
+select media_id_seq.nextval from dual; 
+select actor_id_seq.nextval from dual; 
+
+
+---------VIEWS----------
+CREATE VIEW title_unavail AS SELECT m.title, e.media_id, r.rental_date, r.return_date 
+FROM movies m, media e, rental_history r
+WHERE m.title_id = e.title_id 
+and r.media_id = e.media_id
+and return_date is null
+with read only;
+
+--------INDEX---------------
+CREATE INDEX customer_last_name_idx ON customers(last_name);
+select * from user_indexes
+where index_name = 'CUSTOMER_LAST_NAME_IDX';
+
+
+---------SYNONYM-----------
+CREATE or replace SYNONYM tu FOR title_unavail;
+select * from tu
+select * from USER_SYNONYMS
+where synonym_name = 'TU'
+
+---------------------MySQL--------------------------------------
+--------CREATE TABLES---------
+create table customers (
+  customer_id int(10) not null auto_increment,
+  last_name varchar(25) not null,
+  first_name varchar(25) not null,
+  home_phone varchar(12) not null,
+  address varchar(100) not null,
+  city varchar(30) not null,
+  state varchar(2) not null,
+  email varchar(25) default null,
+  cell_phone varchar(12) default null,
+  primary key (customer_id)
+);
+
+
+create table movies (
+  title_id int(10) not null auto_increment,
+  title varchar(60) not null,
+  description varchar(400) not null,
+  rating varchar(4) default null,
+  category varchar(20) default null,
+  release_date date not null,
+  primary key (title_id),
+  constraint rating_allowed check (rating` in ('G', 'PG', 'PG13', 'R')),
+  constraint category_allowed check (category` in ('DRAMA', 'COMEDY', 'ACTION', 'CHILD', 'SCIFI', 'DOCUMENTARY'))
+);
+
+
+create table media (
+  media_id int(10) not null auto_increment,
+  format varchar(3) not null,
+  title_id int(10) not null,
+  primary key (media_id),
+  key title_id (title_id),
+  constraint media_ibfk_1 foreign key (title_id) references movies (title_id)
+);
+
+
+create table rental_history(
+  media_id int(10) not null,
+  rental_date date not null default current_timestamp(),
+  customer_id int(10) not null,
+  return_date date default null,
+  primary key (media_id,rental_date),
+  key customer_id (customer_id),
+  constraint rh_media_id_fk foreign key (media_id) references media (media_id),
+  constraint rh_customer_id_fk foreign key (customer_id) references customers (customer_id)
+);
+
+
+create table actors (
+  actor_id int(10) not null auto_increment,
+  stage_name varchar(40) not null,
+  first_name varchar(25) not null,
+  last_name varchar(25) not null,
+  birth_date date not null,
+  primary key (actor_id)
+);
+
+
+create table star_billings (
+  actor_id int(10) not null,
+  title_id int(10) not null,
+  comments varchar(40) not null,
+  primary key (actor_id,title_id),
+  key title_id (title_id),
+  constraint sb_title_id_fk foreign key (title_id) references movies (title_id) on delete cascade on update cascade,
+  constraint sb_actor_id_fk foreign key (actor_id) references actors (actor_id) on delete cascade on update cascade
+);
+
+alter table customers auto_increment=101;
+alter table media auto_increment=92;
+alter table actors auto_increment=1001;
+alter table customers add index(last_name);
+
+-------SEQUENCES------------
+alter table `customers` auto_increment=101;
+alter table `media` auto_increment=92;
+alter table `actors` auto_increment=1001;
+alter table `customers` add index(`last_name`);
+
+-------VIEWS----------------
+CREATE VIEW title_unavail AS SELECT m.title, e.media_id, r.rental_date, r.return_date 
+FROM movies m, media e, rental_history r
+WHERE m.title_id = e.title_id 
+and r.media_id = e.media_id
+and return_date is null
+with read only;
+
+--------INDEX---------------
+CREATE INDEX customer_last_name_idx ON customers(last_name);
+select * from user_indexes
+where index_name = 'CUSTOMER_LAST_NAME_IDX';
+
+------SYNONYM---------------
+DOES NOT APPLY
